@@ -20,7 +20,9 @@ db.connect(err => {
 const app = express();
 app.use(express.json());
 app.use(cors({
-  origin: "https://falltech.shop"
+  origin: "https://falltech.shop",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
 }));
 
 
