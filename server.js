@@ -6,7 +6,7 @@ const mysql = require("mysql2");
 const db = mysql.createConnection({
   host: "srv816.hstgr.io",
   user: "u915074426_falltech_user",
-  password: "=8RGOIrqUOPy",
+  password: "Tomi.2203",
   database: "u915074426_falltech_db"
 });
 
