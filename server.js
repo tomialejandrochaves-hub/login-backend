@@ -2,41 +2,72 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const mysql = require("mysql2");
+const db = mysql.createConnection({
+  host: "srv816.hstgr.io",
+  user: "u915074426_falltech_user",
+  password: "=8RGOIrqUOPy",
+  database: "u915074426_falltech_db"
+});
 
+db.connect(err => {
+  if (err) {
+    console.error("Error conexión DB:", err);
+  } else {
+    console.log("Conectado a MySQL");
+  }
+});
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-let usuarios = []; // después lo cambiás por tu base de datos real
 
 const SECRET = "secreto123";
 
-// REGISTRO
 app.post("/register", async (req, res) => {
   const { email, password } = req.body;
 
   const hash = await bcrypt.hash(password, 10);
 
-  usuarios.push({ email, password: hash });
-
-  res.json({ message: "Usuario creado" });
+  db.query(
+    "INSERT INTO usuarios (email, password) VALUES (?, ?)",
+    [email, hash],
+    (err, result) => {
+      if (err) {
+        return res.status(400).json({ error: "Usuario ya existe" });
+      }
+      res.json({ message: "Usuario creado" });
+    }
+  );
 });
 
-// LOGIN
-app.post("/login", async (req, res) => {
+app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
-  const user = usuarios.find(u => u.email === email);
+  db.query(
+    "SELECT * FROM usuarios WHERE email = ?",
+    [email],
+    async (err, results) => {
+      if (err) return res.status(500).json({ error: "Error servidor" });
 
-  if (!user) return res.status(400).json({ error: "Usuario no existe" });
+      if (results.length === 0) {
+        return res.status(400).json({ error: "Usuario no existe" });
+      }
 
-  const valid = await bcrypt.compare(password, user.password);
+      const user = results[0];
 
-  if (!valid) return res.status(400).json({ error: "Contraseña incorrecta" });
+      const valid = await bcrypt.compare(password, user.password);
 
-  const token = jwt.sign({ email }, SECRET, { expiresIn: "1h" });
+      if (!valid) {
+        return res.status(400).json({ error: "Contraseña incorrecta" });
+      }
 
-  res.json({ token });
+      const token = jwt.sign({ email }, SECRET, { expiresIn: "1h" });
+
+      res.json({ token });
+    }
+  );
 });
 
-app.listen(3000, () => console.log("Servidor en http://localhost:3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Servidor corriendo en puerto " + PORT));
